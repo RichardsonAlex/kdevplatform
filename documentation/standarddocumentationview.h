@@ -21,18 +21,33 @@
 #ifndef KDEVPLATFORM_STANDARDDOCUMENTATIONVIEW_H
 #define KDEVPLATFORM_STANDARDDOCUMENTATIONVIEW_H
 
-#include <QWebView>
+#include "config-documentation.h"
 #include "documentationexport.h"
 #include "documentationfindwidget.h"
 #include <interfaces/idocumentation.h>
+
+
+#if HAVE_QTWEBKIT
+#include <QWebFrame>
+#include <QWebPage>
+#include <QWebSettings>
+#include <QWebView>
+using KDevDocumentationView = QWebView;
+using KDevDocumentationPage = QWebPage;
+#else
+#include <QTextBrowser>
+#include <QTextDocument>
+using KDevDocumentationView = QTextBrowser;
+using KDevDocumentationPage = QTextDocument;
+#endif
 
 namespace KDevelop
 {
 
 /**
- * The standard documentation view, based on QWebView.
+ * The standard documentation view, based on QTextBrowser or QWebView.
  */
-class KDEVPLATFORMDOCUMENTATION_EXPORT StandardDocumentationView : public QWebView
+class KDEVPLATFORMDOCUMENTATION_EXPORT StandardDocumentationView : public KDevDocumentationView
 {
     Q_OBJECT
 public:

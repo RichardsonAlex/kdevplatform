@@ -23,12 +23,11 @@
 #include "debug.h"
 
 #include <QFontDatabase>
-#include <QWebFrame>
 
 using namespace KDevelop;
 
 StandardDocumentationView::StandardDocumentationView(DocumentationFindWidget* findWidget, QWidget* parent)
-    : QWebView(parent)
+    : KDevDocumentationView(parent)
 {
     findWidget->setEnabled(true);
     connect(findWidget, &DocumentationFindWidget::newSearch, this, &StandardDocumentationView::search);
@@ -37,6 +36,7 @@ StandardDocumentationView::StandardDocumentationView(DocumentationFindWidget* fi
     QFont monospaceFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     QFont minimalFont = QFontDatabase::systemFont(QFontDatabase::SmallestReadableFont);
 
+#if HAVE_QTWEBKIT
     QWebSettings* s = settings();
 
     s->setFontFamily(QWebSettings::StandardFont, sansSerifFont.family());
@@ -73,7 +73,7 @@ StandardDocumentationView::StandardDocumentationView(DocumentationFindWidget* fi
         }
         setUpdatesEnabled(true);
     });
-
+#endif
 }
 
 void StandardDocumentationView::search ( const QString& text, DocumentationFindWidget::FindOptions options )
@@ -81,14 +81,21 @@ void StandardDocumentationView::search ( const QString& text, DocumentationFindW
     //Highlighting has been commented because it doesn't let me jump around all occurrences
 //     page()->findText(QString(), QWebPage::HighlightAllOccurrences);
 
-    QWebPage::FindFlags ff=QWebPage::FindWrapsAroundDocument /*| QWebPage::HighlightAllOccurrences*/;
+
+    KDevDocumentationPage::FindFlags ff = KDevDocumentationPage::FindFlags();
+
     if(options & DocumentationFindWidget::Previous)
-        ff |= QWebPage::FindBackward;
+        ff |= KDevDocumentationPage::FindBackward;
 
     if(options & DocumentationFindWidget::MatchCase)
-        ff |= QWebPage::FindCaseSensitively;
+        ff |= KDevDocumentationPage::FindCaseSensitively;
 
+#if HAVE_QTWEBKIT
+    ff |= QWebPage::FindWrapsAroundDocument /*| QWebPage::HighlightAllOccurrences*/;
     page()->findText(text, ff);
+#else
+    find(text, ff);
+#endif
 }
 
 void StandardDocumentationView::setDocumentation(const IDocumentation::Ptr& doc)
