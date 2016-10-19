@@ -53,6 +53,9 @@ class KDEVPLATFORMDOCUMENTATION_EXPORT StandardDocumentationView : public KDevDo
 public:
     explicit StandardDocumentationView(DocumentationFindWidget* findWidget, QWidget* parent = nullptr );
     void setDocumentation(const IDocumentation::Ptr& doc);
+#if !HAVE_QTWEBKIT
+    QVariant loadResource(int type, const QUrl &name) override;
+#endif
 
 public slots:
     /**

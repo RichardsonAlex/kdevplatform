@@ -21,6 +21,7 @@
 #include "standarddocumentationview.h"
 #include "documentationfindwidget.h"
 #include "debug.h"
+#include <KIO/TransferJob>
 
 #include <QFontDatabase>
 
@@ -110,8 +111,29 @@ void StandardDocumentationView::setDocumentation(const IDocumentation::Ptr& doc)
 
 void StandardDocumentationView::update()
 {
-    if(m_doc)
-        setHtml(m_doc->description());
-    else
+    if (m_doc) {
+        auto description = m_doc->description();
+        setHtml(description);
+    } else {
         qCDebug(DOCUMENTATION) << "calling StandardDocumentationView::update() on an uninitialized view";
+    }
 }
+
+#if !HAVE_QTWEBKIT
+QVariant StandardDocumentationView::loadResource(int type, const QUrl &name) {
+    Q_UNUSED(type);
+    // Use KIO to load the resources
+    auto job = KIO::get(name, KIO::NoReload, KIO::HideProgressInfo);
+    QByteArray result;
+    connect(job, &KIO::TransferJob::data, this, [&result](KIO::Job*, QByteArray data) {
+       result.append(data);
+    });
+    if (!job->exec()) {
+        qWarning() << "Failed to load documentation file" << name;
+        return QVariant();
+    }
+    qDebug() << "Loaded" << name << "with type" << type << "->" << result;
+    return QVariant(result);
+}
+#endif
+
