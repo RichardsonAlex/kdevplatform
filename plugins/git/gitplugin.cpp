@@ -275,9 +275,16 @@ QUrl GitPlugin::repositoryRoot(const QUrl& path)
 
 bool GitPlugin::isValidDirectory(const QUrl & dirPath)
 {
-    QDir dir=dotGitDirectory(dirPath);
-
-    return dir.exists(QStringLiteral(".git/HEAD"));
+    if (!dirPath.isLocalFile()) {
+        return false;
+    }
+    QDir dir = dotGitDirectory(dirPath);
+    if (!dir.exists(QStringLiteral(".git/HEAD"))) {
+        return false;
+    }
+    // check if plugin should be disabled by reading git config
+    QString disabled = readConfigOption(dirPath, "kdevgit.disabled");
+    return disabled.compare(QLatin1String("true"), Qt::CaseInsensitive) != 0;
 }
 
 bool GitPlugin::isVersionControlled(const QUrl &path)
