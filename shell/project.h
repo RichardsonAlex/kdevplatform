@@ -68,6 +68,7 @@ public:
     QString projectTempFile() const;
     QString developerTempFile() const;
     Path developerFile() const;
+    bool isRemote();
     void reloadModel() override;
     Path projectFile() const override;
     KSharedConfigPtr projectConfiguration() const override;
@@ -77,6 +78,7 @@ public:
     QSet<IndexedString> fileSet() const override;
 
     bool isReady() const override;
+    bool isRemote() const override;
 
     Path path() const override;
 

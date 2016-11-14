@@ -67,6 +67,7 @@ public:
     void removeFromFileSet( ProjectFileItem* file) override;
     QSet<IndexedString> fileSet() const override { return m_fileSet; }
     bool isReady() const override { return true; }
+    bool isRemote() const override { return false; }
 
     void setPath(const Path& path);
 

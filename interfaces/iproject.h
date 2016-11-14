@@ -136,6 +136,20 @@ public:
     */
     virtual bool isReady() const=0;
 
+    /** @return whether the project is located on a different machine (ideally with shell access).
+     *
+     * @note This is not the same as  path().isRemote() as that does not account for e.g.
+     * SSHFS/NFS mounts. Furthermore, if a SSHFS/NFS mount becomes umounted after suspend/resume
+     * checking the current status would be incorrect.
+     *
+     * @todo should NFS be treated as a local project?
+     * @todo should this be configurable? e.g. we might want to pretend
+     * that a SSHFS mount is local and build it with the tools on the current
+     * machine rather than the remote one
+     */
+    virtual bool isRemote() const=0;
+
+
     /**
      * @brief Get the project path
      * @return The canonical absolute directory of the project.

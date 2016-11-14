@@ -39,6 +39,7 @@
 #include <KJobWidgets>
 #include <KLocalizedString>
 #include <KMessageBox>
+#include <KMountPoint>
 
 #include <project/interfaces/iprojectfilemanager.h>
 #include <project/interfaces/ibuildsystemmanager.h>
@@ -152,6 +153,7 @@ public:
     bool loading;
     bool fullReload;
     bool scheduleReload;
+    bool isRemoteProject = false;
     ProjectProgress* progress;
 
     void reloadDone(KJob* job)
@@ -279,11 +281,20 @@ public:
         if(developerFile.isLocalFile())
         {
             developerTempFile = developerFile.toLocalFile();
+            // check if it is a remote fs mounted on the local machine
+            auto mount = KMountPoint::currentMountPoints().findByPath(developerFile.toLocalFile());
+            auto mountType = mount ? mount->mountType() : QString();
+            if (mountType == QLatin1String("nfs") || mountType == QLatin1String("nfs4")
+                    || mountType == QLatin1String("cifs") || mountType == QLatin1String("autofs")
+                    || mountType == QLatin1String("subfs") || mountType == QLatin1String("sshfs")) {
+                isRemoteProject = true;
+            }
         }
         else {
             QTemporaryFile tmp;
             tmp.open();
             developerTempFile = tmp.fileName();
+            isRemoteProject = true;
 
             auto job = KIO::file_copy(developerFile.toUrl(), QUrl::fromLocalFile(developerTempFile), -1, KIO::HideProgressInfo | KIO::Overwrite);
             KJobWidgets::setWindow(job, Core::self()->uiController()->activeMainWindow());
@@ -610,6 +621,11 @@ Path Project::developerFile() const
 ProjectFolderItem* Project::projectItem() const
 {
     return d->topItem;
+}
+
+bool Project::isRemote() const
+{
+    return d->isRemoteProject;
 }
 
 IPlugin* Project::versionControlPlugin() const
