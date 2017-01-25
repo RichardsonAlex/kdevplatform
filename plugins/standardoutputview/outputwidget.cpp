@@ -45,6 +45,7 @@
 #include <outputview/ioutputviewmodel.h>
 #include <util/focusedtreeview.h>
 
+#include "outputmodel.h"
 #include "toolviewdata.h"
 #include "debug.h"
 
@@ -173,6 +174,10 @@ OutputWidget::OutputWidget(QWidget* parent, const ToolViewData* tvdata)
         }
     }
 
+    QAction *clearAction = new QAction(i18n("Clear"), this);
+    connect(clearAction, &QAction::triggered, this, &OutputWidget::clearModel);
+    addAction(clearAction);
+
     addActions(data->actionList);
 
     connect( data, &ToolViewData::outputAdded,
@@ -187,6 +192,21 @@ OutputWidget::OutputWidget(QWidget* parent, const ToolViewData* tvdata)
         changeDelegate( id );
     }
     enableActions();
+}
+
+void OutputWidget::clearModel()
+{
+    auto view = qobject_cast<QAbstractItemView*>(currentWidget());
+    if( !view || !view->isVisible())
+        return;
+
+    KDevelop::OutputModel *outputModel = nullptr;
+    if (auto proxy = qobject_cast<QAbstractProxyModel*>(view->model())) {
+        outputModel = qobject_cast<KDevelop::OutputModel*>(proxy->sourceModel());
+    } else {
+        outputModel = qobject_cast<KDevelop::OutputModel*>(view->model());
+    }
+    outputModel->clear();
 }
 
 void OutputWidget::addOutput( int id )
@@ -333,13 +353,8 @@ QWidget* OutputWidget::currentWidget() const
 
 KDevelop::IOutputViewModel *OutputWidget::outputViewModel() const
 {
-    QWidget* widget = currentWidget();
-
-    if( !widget || !widget->isVisible() )
-        return nullptr;
-
-    auto view = qobject_cast<QAbstractItemView*>(widget);
-    if( !view )
+    auto view = qobject_cast<QAbstractItemView*>(currentWidget());
+    if( !view || !view->isVisible())
         return nullptr;
 
     QAbstractItemModel *absmodel = view->model();
@@ -365,8 +380,7 @@ void OutputWidget::eventuallyDoFocus()
 
 QAbstractItemView *OutputWidget::outputView() const
 {
-    auto widget = currentWidget();
-    return qobject_cast<QAbstractItemView*>(widget);
+    return qobject_cast<QAbstractItemView*>(currentWidget());
 }
 
 void OutputWidget::activateIndex(const QModelIndex &index, QAbstractItemView *view, KDevelop::IOutputViewModel *iface)
@@ -609,14 +623,8 @@ void OutputWidget::copySelection()
 
 void OutputWidget::selectAll()
 {
-    QWidget* widget = currentWidget();
-    if( !widget )
-        return;
-    QAbstractItemView *view = dynamic_cast<QAbstractItemView*>(widget);
-    if( !view )
-        return;
-
-    view->selectAll();
+    if (QAbstractItemView *view = qobject_cast<QAbstractItemView*>(currentWidget()))
+        view->selectAll();
 }
 
 int OutputWidget::currentOutputIndex()
@@ -634,14 +642,11 @@ int OutputWidget::currentOutputIndex()
 
 void OutputWidget::outputFilter(const QString& filter)
 {
-    QWidget* widget = currentWidget();
-    if( !widget )
-        return;
-    QAbstractItemView *view = dynamic_cast<QAbstractItemView*>(widget);
+    QAbstractItemView *view = qobject_cast<QAbstractItemView*>(currentWidget());
     if( !view )
         return;
     int index = currentOutputIndex();
-    auto proxyModel = dynamic_cast<QSortFilterProxyModel*>(view->model());
+    auto proxyModel = qobject_cast<QSortFilterProxyModel*>(view->model());
     if( !proxyModel )
     {
         proxyModel = new QSortFilterProxyModel(view->model());
