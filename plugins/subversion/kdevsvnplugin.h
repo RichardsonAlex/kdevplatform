@@ -20,7 +20,6 @@
 class QMenu;
 class QUrl;
 class SvnStatusHolder;
-class QTemporaryDir;
 class SvnCommitDialog;
 
 namespace ThreadWeaver
@@ -47,6 +46,7 @@ public:
     KDevelop::VcsImportMetadataWidget* createImportMetadataWidget(QWidget* parent) override;
 
     // Begin:  KDevelop::IBasicVersionControl
+    bool isValidRemoteRepositoryUrl(const QUrl& remoteLocation) override;
     bool isVersionControlled(const QUrl &localLocation) override;
 
     KDevelop::VcsJob* repositoryLocation(const QUrl &localLocation) override;

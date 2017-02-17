@@ -33,9 +33,8 @@ namespace KDevelop {
  * \short Abstract definition-use chain use builder class
  *
  * The AbstractUseBuilder is a convenience class template for creating customized
- * definition-use chain use builders from an AST.  It simplifies:
- * - use of your editor integrator
- * - creating or modifying existing \ref Use "Uses"
+ * definition-use chain use builders from an AST.  It simplifies creating or
+ * modifying existing \ref Use "Uses"
  *
  * \author Hamish Rodda \<rodda@kde.org\>
  */
@@ -87,9 +86,9 @@ protected:
    */
   void newUse(NameT* name)
   {
-    QualifiedIdentifier id = identifierForNode(name);
+    QualifiedIdentifier id = this->identifierForNode(name);
 
-    RangeInRevision newRange = editorFindRange(name, name);
+    RangeInRevision newRange = this->editorFindRange(name, name);
 
     DUChainReadLocker lock(DUChain::lock());
     QList<Declaration*> declarations = LanguageSpecificUseBuilderBase::currentContext()->findDeclarations(id, newRange.start);
@@ -155,10 +154,6 @@ protected:
         m_finishContext = true;
         currentUseTracker() = m_trackerStack.at(m_trackerStack.size()-contextUpSteps-2);
       }
-
-      if (LanguageSpecificUseBuilderBase::m_mapAst)
-        LanguageSpecificUseBuilderBase::editor()->parseSession()->mapAstUse(
-          node, qMakePair<DUContextPointer, RangeInRevision>(DUContextPointer(newContext), newRange));
 
       currentUseTracker().createUses << KDevelop::Use(newRange, declarationIndex);
     }

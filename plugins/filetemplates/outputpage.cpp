@@ -180,6 +180,10 @@ void OutputPage::prepareForm(const SourceFileTemplate& fileTemplate)
     d->outputColumns.clear();
     d->labels.clear();
 
+    const int outputFilesCount = fileTemplate.outputFiles().count();
+    d->output->urlGroupBox->setTitle(i18np("Output file", "Output files", outputFilesCount));
+    d->output->positionGroupBox->setTitle(i18np("Location within existing file", "Location within existing files", outputFilesCount));
+
     foreach (const SourceFileTemplate::OutputFile& file, fileTemplate.outputFiles())
     {
         d->fileIdentifiers << file.identifier;
@@ -263,6 +267,11 @@ QHash< QString, KTextEditor::Cursor > OutputPage::filePositions() const
         positions.insert(identifier, KTextEditor::Cursor(d->outputLines[identifier]->value(), d->outputColumns[identifier]->value()));
     }
     return positions;
+}
+
+void OutputPage::setFocusToFirstEditWidget()
+{
+    d->output->lowerFilenameCheckBox->setFocus();
 }
 
 }

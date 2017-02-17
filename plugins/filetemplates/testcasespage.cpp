@@ -23,7 +23,8 @@
 #include "ui_testcases.h"
 
 #include <KEditListWidget>
-#include <QLayout>
+#include <kwidgetsaddons_version.h>
+
 #include <QVBoxLayout>
 
 using namespace KDevelop;
@@ -42,9 +43,18 @@ TestCasesPage::TestCasesPage(QWidget* parent, Qt::WindowFlags f)
     d->ui->setupUi(this);
 
     d->ui->testCasesLabel->setBuddy(d->ui->keditlistwidget->lineEdit());
-    d->ui->keditlistwidget->setContentsMargins(0, 0, 0, 0);
-    d->ui->keditlistwidget->layout()->setContentsMargins(0, 0, 0, 0);
-    
+
+#if KWIDGETSADDONS_VERSION < QT_VERSION_CHECK(5,32,0)
+    // workaround for KEditListWidget bug:
+    // ensure keyboard focus is returned to edit line
+    connect(d->ui->keditlistwidget, &KEditListWidget::added,
+            d->ui->keditlistwidget->lineEdit(),
+            static_cast<void(QWidget::*)()>(&QWidget::setFocus));
+    connect(d->ui->keditlistwidget, &KEditListWidget::removed,
+            d->ui->keditlistwidget->lineEdit(),
+            static_cast<void(QWidget::*)()>(&QWidget::setFocus));
+#endif
+
     connect(d->ui->identifierLineEdit, &QLineEdit::textChanged, this, &TestCasesPage::identifierChanged);
 }
 
@@ -67,6 +77,11 @@ void TestCasesPage::setTestCases(const QStringList& testCases)
 QStringList TestCasesPage::testCases() const
 {
     return d->ui->keditlistwidget->items();
+}
+
+void TestCasesPage::setFocusToFirstEditWidget()
+{
+    d->ui->identifierLineEdit->setFocus();
 }
 
 void TestCasesPage::identifierChanged(const QString& identifier)

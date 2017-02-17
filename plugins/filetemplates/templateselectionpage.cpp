@@ -97,6 +97,16 @@ void TemplateSelectionPagePrivate::previewTemplate(const QString& file)
     }
 
     TemplatePreviewRenderer renderer;
+    // set default option values
+    if (fileTemplate.hasCustomOptions()) {
+        QVariantHash extraVars;
+        for (const auto& optionGroup : fileTemplate.customOptions(&renderer)) {
+            for (const auto& entry : optionGroup.options) {
+                extraVars[entry.name] = entry.value;
+            }
+        }
+        renderer.addVariables(extraVars);
+    }
     renderer.setEmptyLinesPolicy(TemplateRenderer::TrimEmptyLines);
 
     QTemporaryDir dir;

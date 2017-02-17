@@ -24,6 +24,7 @@
 #include <KConfigGroup>
 #include <KLocalizedString>
 #include <KMessageBox>
+#include <kwidgetsaddons_version.h>
 
 #include <interfaces/iprojectprovider.h>
 
@@ -31,7 +32,8 @@ using namespace KDevelop;
 
 static const int FROM_FILESYSTEM_SOURCE_INDEX = 0;
 
-ProjectSourcePage::ProjectSourcePage(const QUrl& initial, QWidget* parent)
+ProjectSourcePage::ProjectSourcePage(const QUrl& initial, const QUrl& repoUrl, IPlugin* preSelectPlugin,
+                                     QWidget* parent)
     : QWidget(parent)
 {
     m_ui = new Ui::ProjectSourcePage;
@@ -47,10 +49,14 @@ ProjectSourcePage::ProjectSourcePage(const QUrl& initial, QWidget* parent)
     m_ui->sources->addItem(QIcon::fromTheme(QStringLiteral("folder")), i18n("From File System"));
     m_plugins.append(nullptr);
 
+    int preselectIndex = -1;
     IPluginController* pluginManager = ICore::self()->pluginController();
     QList<IPlugin*> plugins = pluginManager->allPluginsForExtension( QStringLiteral("org.kdevelop.IBasicVersionControl") );
     foreach( IPlugin* p, plugins )
     {
+        if (p == preSelectPlugin) {
+            preselectIndex = m_plugins.count();
+        }
         m_plugins.append(p);
         m_ui->sources->addItem(QIcon::fromTheme(pluginManager->pluginInfo(p).iconName()), p->extension<IBasicVersionControl>()->name());
     }
@@ -58,22 +64,29 @@ ProjectSourcePage::ProjectSourcePage(const QUrl& initial, QWidget* parent)
     plugins = pluginManager->allPluginsForExtension( QStringLiteral("org.kdevelop.IProjectProvider") );
     foreach( IPlugin* p, plugins )
     {
+        if (p == preSelectPlugin) {
+            preselectIndex = m_plugins.count();
+        }
         m_plugins.append(p);
         m_ui->sources->addItem(QIcon::fromTheme(pluginManager->pluginInfo(p).iconName()), p->extension<IProjectProvider>()->name());
     }
 
+    if (preselectIndex == -1) {
+        // "From File System" is quite unlikely to be what the user wants, so default to first real plugin...
+        const int defaultIndex = (m_plugins.count() > 1) ? 1 : 0;
+        KConfigGroup configGroup = KSharedConfig::openConfig()->group("Providers");
+        preselectIndex = configGroup.readEntry("LastProviderIndex", defaultIndex);
+    }
+    preselectIndex = qBound(0, preselectIndex, m_ui->sources->count() - 1);
+    m_ui->sources->setCurrentIndex(preselectIndex);
+    setSourceWidget(preselectIndex, repoUrl);
+
+    // connect as last step, otherwise KMessageWidget could get both animatedHide() and animatedShow()
+    // during setup and due to a bug will ignore any but the first call
+    // Only fixed for KF5 5.32
     connect(m_ui->workingDir, &KUrlRequester::textChanged, this, &ProjectSourcePage::reevaluateCorrection);
     connect(m_ui->sources, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &ProjectSourcePage::setSourceIndex);
     connect(m_ui->get, &QPushButton::clicked, this, &ProjectSourcePage::checkoutVcsProject);
-
-    emit isCorrect(false);
-
-    setSourceIndex(FROM_FILESYSTEM_SOURCE_INDEX);
-
-    const int defaultIndex = m_plugins.isEmpty() ? 0 : 1; // "From File System" is quite unlikely to what you want...
-    KConfigGroup configGroup = KSharedConfig::openConfig()->group("Providers");
-    const int lastCurrentIndex = configGroup.readEntry("LastProviderIndex", defaultIndex);
-    m_ui->sources->setCurrentIndex(qBound(0, lastCurrentIndex, m_ui->sources->count() - 1));
 }
 
 ProjectSourcePage::~ProjectSourcePage()
@@ -85,6 +98,11 @@ ProjectSourcePage::~ProjectSourcePage()
 }
 
 void ProjectSourcePage::setSourceIndex(int index)
+{
+    setSourceWidget(index, QUrl());
+}
+
+void ProjectSourcePage::setSourceWidget(int index, const QUrl& repoUrl)
 {
     m_locationWidget = nullptr;
     m_providerWidget = nullptr;
@@ -103,6 +121,10 @@ void ProjectSourcePage::setSourceIndex(int index)
         m_locationWidget=vcIface->vcsLocation(m_ui->sourceBox);
         connect(m_locationWidget, &VcsLocationWidget::changed, this, &ProjectSourcePage::locationChanged);
 
+        // set after connect, to trigger handler
+        if (!repoUrl.isEmpty()) {
+            m_locationWidget->setLocation(repoUrl);
+        }
         remoteWidgetLayout->addWidget(m_locationWidget);
     } else {
         providerIface = providerPerIndex(index);
@@ -271,6 +293,19 @@ void ProjectSourcePage::setStatus(const QString& message)
 
 void ProjectSourcePage::clearStatus()
 {
+#if KWIDGETSADDONS_VERSION < QT_VERSION_CHECK(5,32,0)
+    // workaround for KMessageWidget bug:
+    // animatedHide() will not explicitely hide the widget if it is not yet shown.
+    // So if it has never been explicitely hidden otherwise,
+    // if show() is called on the parent later the KMessageWidget will be shown as well.
+    // As this method is sometimes called when the page is created and thus not yet shown,
+    // we have to ensure the hidden state ourselves here.
+    if (!m_ui->status->isVisible()) {
+        m_ui->status->hide();
+        return;
+    }
+#endif
+
     m_ui->status->animatedHide();
 }
 

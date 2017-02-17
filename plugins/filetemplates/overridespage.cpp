@@ -141,10 +141,13 @@ void OverridesPage::addBaseClasses(const QList<DeclarationPointer>& directBases,
     DUChainReadLocker lock;
 
     foreach(const DeclarationPointer& baseClass, allBases) {
-        DUContext* context = baseClass->internalContext();
-
         QTreeWidgetItem* classItem = new QTreeWidgetItem(overrideTree(), QStringList() << baseClass->qualifiedIdentifier().toString());
         classItem->setIcon(ClassOrFunctionColumn, DUChainUtils::iconForDeclaration(baseClass.data()));
+
+        DUContext* context = baseClass->internalContext();
+        if (!context) {
+            continue;
+        }
 
         //For this internal context get all the function declarations inside the class
         foreach (Declaration * childDeclaration, context->localDeclarations()) {
@@ -263,4 +266,9 @@ void OverridesPage::addCustomDeclarations (const QString& category, const QList<
 
     overrideTree()->expandAll();
     overrideTree()->header()->resizeSections(QHeaderView::ResizeToContents);
+}
+
+void OverridesPage::setFocusToFirstEditWidget()
+{
+    d->overrides->overridesTree->setFocus();
 }

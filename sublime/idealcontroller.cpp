@@ -116,6 +116,14 @@ void IdealController::addView(Qt::DockWidgetArea area, View* view)
       toolView->setFocusProxy(w);
       toolView->addToolBar(toolBar);
       dock->setWidget(toolView);
+
+      KConfigGroup cg(KSharedConfig::openConfig(), "UiSettings/Docks/ToolbarEnabled");
+      toolBar->setVisible(cg.readEntry(dockObjectName, true));
+      connect(toolBar->toggleViewAction(), &QAction::toggled,
+            this, [toolBar, dockObjectName](){
+                KConfigGroup cg(KSharedConfig::openConfig(), "UiSettings/Docks/ToolbarEnabled");
+                cg.writeEntry(dockObjectName, toolBar->toggleViewAction()->isChecked());
+            });
     }
 
     dock->setWindowTitle(view->widget()->windowTitle());
@@ -186,9 +194,9 @@ void IdealController::dockLocationChanged(Qt::DockWidgetArea area)
     }
 
     if (area == Qt::BottomDockWidgetArea || area == Qt::TopDockWidgetArea)
-        dock->setFeatures( QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | IdealDockWidget::DockWidgetVerticalTitleBar  | QDockWidget::DockWidgetMovable);
+        dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | IdealDockWidget::DockWidgetVerticalTitleBar);
     else
-        dock->setFeatures( QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetMovable );
+        dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
 }
 
 IdealButtonBarWidget* IdealController::barForDockArea(Qt::DockWidgetArea area) const
@@ -452,7 +460,10 @@ void IdealController::goPrevNextDock(IdealController::Direction direction)
 
 void IdealController::toggleDocksShown()
 {
-    bool anyBarShown = leftBarWidget->isShown() || bottomBarWidget->isShown() || rightBarWidget->isShown();
+    bool anyBarShown =
+        (leftBarWidget->isShown() && !leftBarWidget->isLocked()) ||
+        (bottomBarWidget->isShown() && !bottomBarWidget->isLocked()) ||
+        (rightBarWidget->isShown() && !rightBarWidget->isLocked());
 
     if (anyBarShown) {
         leftBarWidget->saveShowState();
@@ -460,9 +471,14 @@ void IdealController::toggleDocksShown()
         rightBarWidget->saveShowState();
     }
 
-    toggleDocksShown(leftBarWidget, !anyBarShown && leftBarWidget->lastShowState());
-    toggleDocksShown(bottomBarWidget, !anyBarShown && bottomBarWidget->lastShowState());
-    toggleDocksShown(rightBarWidget, !anyBarShown && rightBarWidget->lastShowState());
+    if (!leftBarWidget->isLocked())
+        toggleDocksShown(leftBarWidget, !anyBarShown && leftBarWidget->lastShowState());
+
+    if (!bottomBarWidget->isLocked())
+        toggleDocksShown(bottomBarWidget, !anyBarShown && bottomBarWidget->lastShowState());
+
+    if (!rightBarWidget->isLocked())
+        toggleDocksShown(rightBarWidget, !anyBarShown && rightBarWidget->lastShowState());
 }
 
 void IdealController::toggleDocksShown(IdealButtonBarWidget* bar, bool show)

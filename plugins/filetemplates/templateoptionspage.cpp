@@ -34,22 +34,28 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QCheckBox>
+#include <QComboBox>
 
 using namespace KDevelop;
 
 class KDevelop::TemplateOptionsPagePrivate
 {
 public:
-    QList<SourceFileTemplate::ConfigOption> entries;
+    QVector<SourceFileTemplate::ConfigOption> entries;
     QHash<QString, QWidget*> controls;
     QHash<QString, QByteArray> typeProperties;
+    QWidget *firstEditWidget;
+    QList<QWidget*> groupBoxes;
 };
 
 TemplateOptionsPage::TemplateOptionsPage(QWidget* parent, Qt::WindowFlags f)
 : QWidget(parent, f)
 , d(new TemplateOptionsPagePrivate)
 {
+    d->firstEditWidget = nullptr;
+
     d->typeProperties.insert(QStringLiteral("String"), "text");
+    d->typeProperties.insert(QStringLiteral("Enum"), "currentText");
     d->typeProperties.insert(QStringLiteral("Int"), "value");
     d->typeProperties.insert(QStringLiteral("Bool"), "checked");
 }
@@ -61,27 +67,42 @@ TemplateOptionsPage::~TemplateOptionsPage()
 
 void TemplateOptionsPage::load(const SourceFileTemplate& fileTemplate, TemplateRenderer* renderer)
 {
+    // TODO: keep any old changed values, as it comes by surprise to have them lost
+    // when going back and forward
+
+    // clear anything as there is on reentering the page
     d->entries.clear();
+    d->controls.clear();
+    // clear any old option group boxes & the base layout
+    d->firstEditWidget = nullptr;
+    qDeleteAll(d->groupBoxes);
+    d->groupBoxes.clear();
+    delete layout();
 
-    QLayout* layout = new QVBoxLayout();
-    QHash<QString, QList<SourceFileTemplate::ConfigOption> > options = fileTemplate.customOptions(renderer);
-    QHash<QString, QList<SourceFileTemplate::ConfigOption> >::const_iterator it;
+    QVBoxLayout* layout = new QVBoxLayout();
 
-    for (it = options.constBegin(); it != options.constEnd(); ++it)
-    {
+    for (const auto& optionGroup : fileTemplate.customOptions(renderer)) {
         QGroupBox* box = new QGroupBox(this);
-        box->setTitle(it.key());
+        d->groupBoxes.append(box);
+
+        box->setTitle(optionGroup.name);
 
         QFormLayout* formLayout = new QFormLayout;
 
-        d->entries << it.value();
-        foreach (const SourceFileTemplate::ConfigOption& entry, it.value())
-        {
+        d->entries << optionGroup.options;
+        for (const auto& entry : optionGroup.options) {
             QWidget* control = nullptr;
             const QString type = entry.type;
             if (type == QLatin1String("String"))
             {
                 control = new QLineEdit(entry.value.toString(), box);
+            }
+            else if (type == QLatin1String("Enum"))
+            {
+                auto input = new QComboBox(box);
+                input->addItems(entry.values);
+                input->setCurrentText(entry.value.toString());
+                control = input;
             }
             else if (type == QLatin1String("Int"))
             {
@@ -114,12 +135,18 @@ void TemplateOptionsPage::load(const SourceFileTemplate& fileTemplate, TemplateR
                 QLabel* label = new QLabel(entryLabelText, box);
                 formLayout->addRow(label, control);
                 d->controls.insert(entry.name, control);
+                if (d->firstEditWidget == nullptr) {
+                    d->firstEditWidget = control;
+                }
             }
         }
 
         box->setLayout(formLayout);
         layout->addWidget(box);
     }
+
+    layout->addStretch();
+
     setLayout(layout);
 }
 
@@ -138,4 +165,11 @@ QVariantHash TemplateOptionsPage::templateOptions() const
     qCDebug(PLUGIN_FILETEMPLATES) << values.size() << d->entries.size();
 
     return values;
+}
+
+void TemplateOptionsPage::setFocusToFirstEditWidget()
+{
+    if (d->firstEditWidget) {
+        d->firstEditWidget->setFocus();
+    }
 }

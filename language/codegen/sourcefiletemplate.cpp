@@ -57,6 +57,7 @@ ConfigOption SourceFileTemplatePrivate::readEntry(const QDomElement& element,
     entry.name = element.attribute(QStringLiteral("name"));
     entry.type = element.attribute(QStringLiteral("type"), QStringLiteral("String"));
 
+    bool isDefaultValueSet = false;
     for (QDomElement e = element.firstChildElement(); !e.isNull(); e = e.nextSiblingElement())
     {
         QString tag = e.tagName();
@@ -84,10 +85,38 @@ ConfigOption SourceFileTemplatePrivate::readEntry(const QDomElement& element,
         else if ( tag == QLatin1String("default") )
         {
             entry.value = renderer->render(e.text(), entry.name);
+            isDefaultValueSet = true;
+        }
+        else if (tag == QLatin1String("choices")) {
+            QStringList values;
+            QDomNodeList choices = element.elementsByTagName(QStringLiteral("choice"));
+            for (int j = 0; j < choices.size(); ++j) {
+                QDomElement choiceElement = choices.at(j).toElement();
+                values << choiceElement.attribute(QStringLiteral("name"));
+            }
+            Q_ASSERT(!values.isEmpty());
+            if (values.isEmpty()) {
+                qCWarning(LANGUAGE) << "Entry " << entry.name << "has an enum without any choices";
+            }
+            entry.values = values;
         }
     }
 
     qCDebug(LANGUAGE) << "Read entry" << entry.name << "with default value" << entry.value;
+
+    // preset value for enum if needed
+    if (!entry.values.isEmpty()) {
+        if (isDefaultValueSet) {
+            const bool isSaneDefaultValue = entry.values.contains(entry.value.toString());
+            Q_ASSERT(isSaneDefaultValue);
+            if (!isSaneDefaultValue) {
+                qCWarning(LANGUAGE) << "Default value" << entry.value << "not in enum" << entry.values;
+                entry.value = entry.values.at(0);
+            }
+        } else {
+            entry.value = entry.values.at(0);
+        }
+    }
     return entry;
 }
 
@@ -256,7 +285,7 @@ bool SourceFileTemplate::hasCustomOptions() const
     return hasOptions;
 }
 
-QHash< QString, QList<ConfigOption> > SourceFileTemplate::customOptions(TemplateRenderer* renderer) const
+QVector<SourceFileTemplate::ConfigOptionGroup> SourceFileTemplate::customOptions(TemplateRenderer* renderer) const
 {
     Q_ASSERT(isValid());
 
@@ -264,11 +293,11 @@ QHash< QString, QList<ConfigOption> > SourceFileTemplate::customOptions(Template
     KConfigGroup cg(&templateConfig, "General");
     const KArchiveEntry* entry = d->archive->directory()->entry(cg.readEntry("OptionsFile", "options.kcfg"));
 
-    QHash<QString, QList<ConfigOption> > options;
+    QVector<ConfigOptionGroup> optionGroups;
 
     if (!entry->isFile())
     {
-        return options;
+        return optionGroups;
     }
     const KArchiveFile* file = static_cast<const KArchiveFile*>(entry);
 
@@ -282,32 +311,34 @@ QHash< QString, QList<ConfigOption> > SourceFileTemplate::customOptions(Template
     if ( !doc.setContent( file->data(), &errorMsg, &errorRow, &errorCol ) ) {
         qCDebug(LANGUAGE) << "Unable to load document.";
         qCDebug(LANGUAGE) << "Parse error in line " << errorRow << ", col " << errorCol << ": " << errorMsg;
-        return options;
+        return optionGroups;
     }
 
     QDomElement cfgElement = doc.documentElement();
     if ( cfgElement.isNull() ) {
         qCDebug(LANGUAGE) << "No document in kcfg file";
-        return options;
+        return optionGroups;
     }
 
     QDomNodeList groups = cfgElement.elementsByTagName(QStringLiteral("group"));
+    optionGroups.reserve(groups.size());
     for (int i = 0; i < groups.size(); ++i)
     {
         QDomElement group = groups.at(i).toElement();
-        QList<ConfigOption> optionGroup;
-        QString groupName = group.attribute(QStringLiteral("name"));
+        ConfigOptionGroup optionGroup;
+        optionGroup.name = group.attribute(QStringLiteral("name"));
 
         QDomNodeList entries = group.elementsByTagName(QStringLiteral("entry"));
+        optionGroup.options.reserve(entries.size());
         for (int j = 0; j < entries.size(); ++j)
         {
             QDomElement entry = entries.at(j).toElement();
-            optionGroup << d->readEntry(entry, renderer);
+            optionGroup.options << d->readEntry(entry, renderer);
         }
 
-        options.insert(groupName, optionGroup);
+        optionGroups << optionGroup;
     }
-    return options;
+    return optionGroups;
 }
 
 void SourceFileTemplate::addAdditionalSearchLocation(const QString& location)

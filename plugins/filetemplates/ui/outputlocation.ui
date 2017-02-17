@@ -14,16 +14,13 @@
    <item>
     <widget class="QGroupBox" name="groupBox_3">
      <property name="title">
-      <string>Choose where to save the new class.</string>
+      <string>Choose where to save the generated content.</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
       <item row="1" column="0">
        <widget class="QGroupBox" name="positionGroupBox">
         <property name="enabled">
          <bool>true</bool>
-        </property>
-        <property name="title">
-         <string>Location within existing file(s)</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -37,9 +34,6 @@
       </item>
       <item row="0" column="0">
        <widget class="QGroupBox" name="urlGroupBox">
-        <property name="title">
-         <string>Output file(s)</string>
-        </property>
         <property name="flat">
          <bool>true</bool>
         </property>
@@ -91,7 +85,7 @@
  <customwidgets>
   <customwidget>
    <class>KMessageWidget</class>
-   <extends>QWidget</extends>
+   <extends>QFrame</extends>
    <header location="global">kmessagewidget.h</header>
    <container>1</container>
   </customwidget>

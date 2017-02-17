@@ -31,7 +31,6 @@ Boston, MA 02110-1301, USA.
 #include <QFileInfo>
 #include <QMimeDatabase>
 #include <QRegularExpression>
-#include <QTemporaryFile>
 
 #include <KActionCollection>
 #include <KEncodingFileDialog>
@@ -90,18 +89,12 @@ struct DocumentControllerPrivate
     {
     }
 
-    ~DocumentControllerPrivate()
-    {
-        //delete temporary files so they are removed from disk
-        foreach (QTemporaryFile *temp, tempFiles)
-            delete temp;
-    }
+    ~DocumentControllerPrivate() = default;
 
     // used to map urls to open docs
     QHash< QUrl, IDocument* > documents;
 
     QHash< QString, IDocumentFactory* > factories;
-    QList<QTemporaryFile*> tempFiles;
 
     struct HistoryEntry
     {
@@ -211,7 +204,7 @@ struct DocumentControllerPrivate
         if (url.isLocalFile()) {
             return QFile::exists(url.toLocalFile());
         } else {
-            auto job = KIO::stat(url, KIO::StatJob::SourceSide, 0);
+            auto job = KIO::stat(url, KIO::StatJob::SourceSide, 0, KIO::HideProgressInfo);
             KJobWidgets::setWindow(job, ICore::self()->uiController()->activeMainWindow());
             return job->exec();
         }
@@ -1178,7 +1171,6 @@ bool DocumentController::openDocumentsWithSplitSeparators( Sublime::AreaIndex* i
         // Check if the second child-set contains an unterminated separator, which means that the active views should end up there
         for(int pos = pickSeparator+1; pos < urlsWithSeparators.size(); ++pos)
             if( separators.contains(urlsWithSeparators[pos]) && (pos == urlsWithSeparators.size()-1 ||
-                separatorsAndParens.contains(urlsWithSeparators[pos-1]) ||
                 separatorsAndParens.contains(urlsWithSeparators[pos-1])) )
                     activeViewToSecondChild = true;
     }

@@ -69,9 +69,7 @@ LaunchConfigurationDialog::LaunchConfigurationDialog(QWidget* parent)
     splitter->setSizes(QList<int>() << 260 << 620);
     splitter->setCollapsible(0, false);
 
-    addConfig->setIcon( QIcon::fromTheme(QStringLiteral("list-add")) );
     addConfig->setToolTip(i18nc("@info:tooltip", "Add a new launch configuration."));
-    deleteConfig->setIcon( QIcon::fromTheme(QStringLiteral("list-remove")) );
     deleteConfig->setEnabled( false );
     deleteConfig->setToolTip(i18nc("@info:tooltip", "Delete selected launch configuration."));
 
@@ -197,7 +195,7 @@ LaunchConfigurationDialog::LaunchConfigurationDialog(QWidget* parent)
     connect(buttonBox->button(QDialogButtonBox::Apply), &QPushButton::clicked, this, static_cast<void(LaunchConfigurationDialog::*)()>(&LaunchConfigurationDialog::saveConfig) );
     mainLayout->addWidget(buttonBox);
 
-    resize( QSize(qMax(700, sizeHint().width()), qMax(500, sizeHint().height())) );
+    resize( QSize(qMax(1200, sizeHint().width()), qMax(500, sizeHint().height())) );
 }
 
 void LaunchConfigurationDialog::doTreeContextMenu(QPoint point)
@@ -283,7 +281,6 @@ void LaunchConfigurationDialog::selectionChanged(QItemSelection selected, QItemS
         delete w;
     }
 
-    debugger->clear();
     if( !selected.indexes().isEmpty() )
     {
         QModelIndex idx = selected.indexes().first();
@@ -297,22 +294,24 @@ void LaunchConfigurationDialog::selectionChanged(QItemSelection selected, QItemS
             connect( l, &LaunchConfiguration::nameChanged, this, &LaunchConfigurationDialog::updateNameLabel );
             if( lm )
             {
+                QVariant currentLaunchMode = idx.sibling(idx.row(), 1).data(Qt::EditRole);
                 {
                     QSignalBlocker blocker(debugger);
                     QList<ILauncher*> launchers = l->type()->launchers();
+
+                    debugger->clear();
                     for( QList<ILauncher*>::const_iterator it = launchers.constBegin(); it != launchers.constEnd(); ++it )
                     {
                         if( ((*it)->supportedModes().contains( lm->id() ) ) ) {
                             debugger->addItem( (*it)->name(), (*it)->id() );
                         }
                     }
+
+                    debugger->setCurrentIndex(debugger->findData(currentLaunchMode));
                 }
 
                 debugger->setVisible(debugger->count()>0);
                 debugLabel->setVisible(debugger->count()>0);
-
-                QVariant currentLaunchMode = idx.sibling(idx.row(), 1).data(Qt::EditRole);
-                debugger->setCurrentIndex(debugger->findData(currentLaunchMode));
 
                 ILauncher* launcher = l->type()->launcherForId( currentLaunchMode.toString() );
                 if( launcher )
@@ -378,7 +377,7 @@ void LaunchConfigurationDialog::selectionChanged(QItemSelection selected, QItemS
             deleteConfig->setEnabled( false );
             stack->setCurrentIndex( 0 );
             QLabel* l = new QLabel(i18n("<i>Select a configuration to edit from the left,<br>"
-                                        "or click the \"Add New\" button to add a new one.</i>"), stack);
+                                        "or click the \"Add\" button to add a new one.</i>"), stack);
             l->setAlignment(Qt::AlignCenter);
             stack->addWidget(l);
             stack->setCurrentWidget(l);

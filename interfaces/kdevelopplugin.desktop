@@ -63,10 +63,6 @@ Type=QString
 [PropertyDef::X-KDevelop-Mode]
 Type=QString
 
-# optional, Arguments to pass to the plugin
-[PropertyDef::X-KDevelop-Args]
-Type=QString
-
 # optional, Interfaces that a plugin implements
 # usually values start with org.kdevelop
 [PropertyDef::X-KDevelop-Interfaces]
@@ -87,9 +83,10 @@ Type=QStringList
 [PropertyDef::X-KDevelop-SupportedMimeTypes]
 Type=QStringList
 
-# optional, language supported by a language plugin
-[PropertyDef::X-KDevelop-Language]
-Type=QString
+# optional, languages supported by a language plugin
+# Example language names: "C", "C++", "Objective-C", "CMake"
+[PropertyDef::X-KDevelop-Languages]
+Type=QStringList
 
 # optional, defines whether the plugin can be disabled
 # by the user. Possible values are "AlwaysOn" and "UserSelectable".
