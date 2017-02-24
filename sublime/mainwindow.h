@@ -106,6 +106,9 @@ public:
      */
     void setBackgroundCentralWidget(QWidget* w);
 
+    /**Returns a widget that can hold a centralized view bar*/
+    QWidget *viewBarContainer() const;
+
 public Q_SLOTS:
     /**Shows the @p view and makes it active, focusing it by default).*/
     void activateView(Sublime::View *view, bool focus = true);
@@ -130,9 +133,8 @@ Q_SIGNALS:
     /**Emitted when a view is going to be removed from the mainwindow.*/
     void aboutToRemoveView(Sublime::View*);
 
-
 protected:
-    QWidget *statusBarLocation();
+    QWidget *statusBarLocation() const;
     virtual void initializeStatusBar();
 protected Q_SLOTS:
     virtual void tabDoubleClicked(Sublime::View* view);

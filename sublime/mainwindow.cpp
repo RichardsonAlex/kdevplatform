@@ -382,9 +382,14 @@ void MainWindow::enableAreaSettingsSave()
     d->autoAreaSettingsSave = true;
 }
 
-QWidget *MainWindow::statusBarLocation()
+QWidget *MainWindow::statusBarLocation() const
 {
     return d->idealController->statusBarLocation();
+}
+
+QWidget *MainWindow::viewBarContainer() const
+{
+    return d->viewBarContainer;
 }
 
 void MainWindow::setTabBarLeftCornerWidget(QWidget* widget)

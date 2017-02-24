@@ -36,7 +36,6 @@
 #include <interfaces/ilaunchconfiguration.h>
 #include <interfaces/iprojectcontroller.h>
 #include <interfaces/iuicontroller.h>
-#include <util/environmentgrouplist.h>
 
 #include "nativeappconfig.h"
 #include "debug.h"
@@ -50,7 +49,8 @@ QString ExecutePlugin::executableEntry = QStringLiteral("Executable");
 QString ExecutePlugin::argumentsEntry = QStringLiteral("Arguments");
 QString ExecutePlugin::isExecutableEntry = QStringLiteral("isExecutable");
 QString ExecutePlugin::dependencyEntry = QStringLiteral("Dependencies");
-QString ExecutePlugin::environmentGroupEntry = QStringLiteral("EnvironmentGroup");
+// TODO: migrate to more consistent key term "EnvironmentProfile"
+QString ExecutePlugin::environmentProfileEntry = QStringLiteral("EnvironmentGroup");
 QString ExecutePlugin::useTerminalEntry = QStringLiteral("Use External Terminal");
 QString ExecutePlugin::terminalEntry = QStringLiteral("External Terminal");
 QString ExecutePlugin::userIdToRunEntry = QStringLiteral("User Id to Run");
@@ -148,14 +148,14 @@ KJob* ExecutePlugin::dependencyJob( KDevelop::ILaunchConfiguration* cfg ) const
 }
 
 
-QString ExecutePlugin::environmentGroup( KDevelop::ILaunchConfiguration* cfg ) const
+QString ExecutePlugin::environmentProfileName(KDevelop::ILaunchConfiguration* cfg) const
 {
     if( !cfg )
     {
         return QLatin1String("");
     }
 
-    return cfg->config().readEntry( ExecutePlugin::environmentGroupEntry, "" );
+    return cfg->config().readEntry(ExecutePlugin::environmentProfileEntry, QString());
 }
 
 

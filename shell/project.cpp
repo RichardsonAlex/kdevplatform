@@ -334,8 +334,7 @@ public:
     {
         if (manager)
         {
-            IProjectFileManager* iface = nullptr;
-            iface = manager->extension<KDevelop::IProjectFileManager>();
+            IProjectFileManager* iface = manager->extension<KDevelop::IProjectFileManager>();
             Q_ASSERT(iface);
             return iface;
         }

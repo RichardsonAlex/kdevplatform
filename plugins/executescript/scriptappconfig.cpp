@@ -45,7 +45,6 @@
 
 #include "executescriptplugin.h"
 #include <util/kdevstringhandler.h>
-#include <util/environmentgrouplist.h>
 #include <project/projectitemlineedit.h>
 
 using namespace KDevelop;
@@ -91,7 +90,7 @@ void ScriptAppConfigPage::loadFromConfiguration(const KConfigGroup& cfg, KDevelo
     }
     arguments->setText( cfg.readEntry( ExecuteScriptPlugin::argumentsEntry, "" ) );
     workingDirectory->setUrl( cfg.readEntry( ExecuteScriptPlugin::workingDirEntry, QUrl() ) );
-    environment->setCurrentProfile( cfg.readEntry( ExecuteScriptPlugin::environmentGroupEntry, QString() ) );
+    environment->setCurrentProfile(cfg.readEntry(ExecuteScriptPlugin::environmentProfileEntry, QString()));
     outputFilteringMode->setCurrentIndex( cfg.readEntry( ExecuteScriptPlugin::outputFilteringEntry, 2u ));
     //runInTerminal->setChecked( cfg.readEntry( ExecuteScriptPlugin::useTerminalEntry, false ) );
 }
@@ -126,7 +125,7 @@ void ScriptAppConfigPage::saveToConfiguration( KConfigGroup cfg, KDevelop::IProj
     cfg.writeEntry( ExecuteScriptPlugin::runCurrentFileEntry, runCurrentFile->isChecked() );
     cfg.writeEntry( ExecuteScriptPlugin::argumentsEntry, arguments->text() );
     cfg.writeEntry( ExecuteScriptPlugin::workingDirEntry, workingDirectory->url() );
-    cfg.writeEntry( ExecuteScriptPlugin::environmentGroupEntry, environment->currentProfile() );
+    cfg.writeEntry( ExecuteScriptPlugin::environmentProfileEntry, environment->currentProfile() );
     cfg.writeEntry( ExecuteScriptPlugin::outputFilteringEntry, outputFilteringMode->currentIndex() );
     //cfg.writeEntry( ExecuteScriptPlugin::useTerminalEntry, runInTerminal->isChecked() );
 }
