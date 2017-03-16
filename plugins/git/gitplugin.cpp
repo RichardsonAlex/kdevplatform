@@ -278,7 +278,25 @@ bool GitPlugin::isValidDirectory(const QUrl & dirPath)
     if (!dirPath.isLocalFile()) {
         return false;
     }
-    QDir dir = dotGitDirectory(dirPath);
+    QDir dir=dotGitDirectory(dirPath);
+    QFile dotGitPotentialFile(dir.filePath(".git"));
+    // if .git is a file, we may be in a git worktree
+    QFileInfo dotGitPotentialFileInfo(dotGitPotentialFile);
+    if (!dotGitPotentialFileInfo.isDir() && dotGitPotentialFile.exists()) {
+        QString gitWorktreeFileContent;
+        if (dotGitPotentialFile.open(QFile::ReadOnly)) {
+            // the content should be gitdir: /path/to/the/.git/worktree
+            gitWorktreeFileContent = QString::fromUtf8(dotGitPotentialFile.readAll());
+            dotGitPotentialFile.close();
+        } else {
+            return false;
+        }
+        const auto items = gitWorktreeFileContent.split(' ');
+        if (items.size() == 2 && items.at(0) == "gitdir:") {
+            qCDebug(PLUGIN_GIT) << "we are in a git worktree" << items.at(1);
+            return true;
+        }
+    }
     if (!dir.exists(QStringLiteral(".git/HEAD"))) {
         return false;
     }

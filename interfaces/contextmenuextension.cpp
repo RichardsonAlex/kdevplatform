@@ -41,8 +41,8 @@ const QString ContextMenuExtension::ProjectGroup  = QStringLiteral("ProjectGroup
 const QString ContextMenuExtension::OpenEmbeddedGroup  = QStringLiteral("OpenEmbeddedGroup");
 const QString ContextMenuExtension::OpenExternalGroup  = QStringLiteral("OpenExternalGroup");
 const QString ContextMenuExtension::AnalyzeGroup = QStringLiteral("AnalyzeGroup");
+const QString ContextMenuExtension::NavigationGroup = QStringLiteral("NavigationGroup");
 const QString ContextMenuExtension::ExtensionGroup  = QStringLiteral("ExtensionGroup");
-
 
 class ContextMenuExtensionPrivate
 {
@@ -102,6 +102,9 @@ void populateMenuWithGroup(
     for (const ContextMenuExtension& extension : extensions) {
         groupActions += extension.actions(groupName);
     }
+    // remove NULL QActions, if any. Those can end up in groupActions if plugins
+    // like the debugger plugins are not loaded.
+    groupActions.removeAll(nullptr);
 
     if (groupActions.isEmpty()) {
         return;
@@ -126,8 +129,9 @@ void ContextMenuExtension::populateMenu(QMenu* menu, const QList<ContextMenuExte
     populateMenuWithGroup(menu, extensions, EditGroup);
     populateMenuWithGroup(menu, extensions, DebugGroup, i18n("Debug"));
     populateMenuWithGroup(menu, extensions, RefactorGroup, i18n("Refactor"));
-    populateMenuWithGroup(menu, extensions, VcsGroup, i18n("Version Control"));
+    populateMenuWithGroup(menu, extensions, NavigationGroup);
     populateMenuWithGroup(menu, extensions, AnalyzeGroup, i18n("Analyze With"));
+    populateMenuWithGroup(menu, extensions, VcsGroup);
     populateMenuWithGroup(menu, extensions, ExtensionGroup);
 }
 
